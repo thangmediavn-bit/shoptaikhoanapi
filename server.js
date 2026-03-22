@@ -374,5 +374,9 @@ app.get('/api/admin/dashboard', auth, adminOnly, async (req, res) => {
 });
 
 // --- DÒNG NÀY PHẢI LUÔN NẰM DƯỚI CÙNG ---
-app.listen(PORT, () => console.log(`🚀 Hệ thống đang chạy tại: http://localhost:${PORT}`));
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+const PORT = process.env.PORT || 3000;
+
+// SỬA DÒNG NÀY: Thêm '0.0.0.0' vào
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server is running on port ${PORT}`);
+});
