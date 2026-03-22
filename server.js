@@ -6,6 +6,10 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server đang chạy tại cổng: ${PORT}`);
+});
 const JWT_SECRET = 'chuoibimat_sieucap_123456'; 
 
 app.use(cors());
