@@ -6,10 +6,12 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server đang chạy tại cổng: ${PORT}`);
+// ĐÚNG:
+app.listen(PORT, '0.0.0.0', () => { 
+    console.log(`Server is running on port ${PORT}`); 
 });
+// SAI (thường gặp):
+// app.listen(PORT . '0.0.0.0' . () => { ... }) -> Lỗi ngay lập tức
 const JWT_SECRET = 'chuoibimat_sieucap_123456'; 
 
 app.use(cors());
@@ -198,7 +200,7 @@ app.get('/api/admin/dashboard', auth, adminOnly, async (req, res) => {
             cost += oPrice;
 
             return { 
-                username: o.userId?.username || 'N/A', 
+                username: o.userId?.username || 'Khách ẩn danh', 
                 productName: o.productName || 'Sản phẩm không tên', 
                 price: retail, 
                 cost: oPrice, 
@@ -374,9 +376,5 @@ app.get('/api/admin/dashboard', auth, adminOnly, async (req, res) => {
 });
 
 // --- DÒNG NÀY PHẢI LUÔN NẰM DƯỚI CÙNG ---
-const PORT = process.env.PORT || 3000;
-
-// SỬA DÒNG NÀY: Thêm '0.0.0.0' vào
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`🚀 Hệ thống đang chạy tại: http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
