@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro-API Dashboard | Hệ thống đại lý</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: {"50":"#eff6ff","600":"#2563eb","700":"#1d4ed8"} } } } }
+    </script>
+    <style>
+        .result-box { background: #111827; color: #4ade80; padding: 1rem; border-radius: 0.5rem; font-family: monospace; font-size: 12px; max-height: 150px; overflow-y: auto; }
+        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900" onload="initPage()">
+
+    <div id="toast-container" class="fixed bottom-5 left-5 z-[110] flex flex-col gap-2 pointer-events-none"></div>
+
+    <nav class="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div class="px-3 py-3 lg:px-5 flex items-center justify-between">
+            <div class="flex items-center">
+                <button data-drawer-target="sidebar" data-drawer-toggle="sidebar" type="button" class="p-2 text-gray-500 rounded-lg sm:hidden"><i class="fas fa-bars"></i></button>
+                <span class="text-xl font-bold ms-2 text-primary-600">Pro-API Store</span>
+            </div>
+            <div id="authSection" class="flex items-center gap-3">
+                <button id="btnLoginBtn" onclick="openAuth('login')" class="text-white bg-primary-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition">Đăng nhập</button>
+                <div id="userMenu" class="hidden items-center gap-3">
+                    <span class="bg-green-100 text-green-800 text-xs font-bold px-3 py-1.5 rounded-full border border-green-300 shadow-sm"><i class="fas fa-wallet me-1"></i> <span id="balanceTxt">0đ</span></span>
+                    <button data-dropdown-toggle="user-dropdown"><img id="topAvatar" class="w-9 h-9 rounded-full border-2 border-primary-500 p-0.5 object-cover" src=""></button>
+                </div>
+                <div id="user-dropdown" class="z-50 hidden bg-white divide-y divide-gray-100 rounded shadow w-44 dark:bg-gray-700 border">
+                    <ul class="py-2 text-sm text-gray-700 dark:text-gray-200">
+                        <li><a href="#" onclick="showView('profile')" class="block px-4 py-2 hover:bg-gray-100">Cài đặt cá nhân</a></li>
+                        <li><a href="#" onclick="logout()" class="block px-4 py-2 text-red-600 hover:bg-gray-100 font-bold">Đăng xuất</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <aside id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0 dark:bg-gray-800 dark:border-gray-700">
+        <div class="h-full px-3 pb-4 overflow-y-auto">
+            <ul class="space-y-1 font-medium mb-4">
+                <li><a href="#" id="m-home" onclick="showView('home')" class="flex items-center p-2 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 transition"><i class="fas fa-home w-5 text-gray-400"></i><span class="ms-3">Trang chủ</span></a></li>
+                <li><a href="#" id="m-history" onclick="showView('history')" class="flex items-center p-2 rounded-lg hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700 transition"><i class="fas fa-receipt w-5 text-gray-400"></i><span class="ms-3">Lịch sử mua</span></a></li>
+                <li id="adm-1" class="hidden border-t pt-2 mt-2"><a href="#" id="m-admin" onclick="showView('admin')" class="flex items-center p-2 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-gray-700"><i class="fas fa-users-cog w-5"></i><span class="ms-3 font-bold">Quản lý User</span></a></li>
+                <li id="adm-2" class="hidden"><a href="#" id="m-dash" onclick="showView('dash')" class="flex items-center p-2 rounded-lg text-purple-600 hover:bg-purple-50 dark:hover:bg-gray-700"><i class="fas fa-chart-pie w-5"></i><span class="ms-3 font-bold">Thống kê lãi</span></a></li>
+            </ul>
+            <p class="text-[10px] font-bold text-gray-400 uppercase px-2 mb-2">Danh mục dịch vụ</p>
+            <ul id="catList" class="space-y-1 font-medium border-t border-gray-100 pt-2"></ul>
+        </div>
+    </aside>
+
+    <div class="p-4 sm:ml-64 mt-14">
+        <div id="v-home">
+            <div class="flex justify-between items-center mb-6"><h2 id="pageTitle" class="text-xl font-extrabold dark:text-white text-gray-800">Sản phẩm</h2></div>
+            <div id="prodGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5"></div>
+        </div>
+
+        <div id="v-history" class="hidden-view">
+            <h2 class="text-xl font-bold mb-4 dark:text-white">Đơn hàng của bạn</h2>
+            <div class="overflow-x-auto shadow-md rounded-xl"><table class="w-full text-sm text-left text-gray-500">
+                <thead class="bg-gray-50 uppercase text-xs"><tr><th class="px-6 py-3">Ngày mua</th><th class="px-6 py-3">Sản phẩm</th><th class="px-6 py-3 text-red-500">Giá</th><th class="px-6 py-3">Tài khoản trả về</th></tr></thead>
+                <tbody id="histBody"></tbody>
+            </table></div>
+        </div>
+
+        <div id="v-profile" class="hidden-view">
+            <div class="max-w-xl mx-auto bg-white p-8 rounded-2xl shadow-sm dark:bg-gray-800 border">
+                <h2 class="text-xl font-bold mb-6 text-center dark:text-white">Hồ sơ cá nhân</h2>
+                <div class="flex flex-col items-center mb-6"><img id="p-avatar" class="w-24 h-24 rounded-full border-4 border-primary-50 mb-3 object-cover shadow-sm"><h3 id="p-user" class="font-extrabold text-xl dark:text-white uppercase"></h3></div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div><label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Email</label><input id="i-email" class="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:text-white bg-gray-50 focus:ring-primary-600"></div>
+                    <div><label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Số điện thoại</label><input id="i-phone" class="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:text-white bg-gray-50 focus:ring-primary-600"></div>
+                </div>
+                <div class="mb-6"><label class="block text-xs font-bold text-gray-400 mb-1 uppercase">Link ảnh đại diện (URL)</label><input id="i-avatar" class="w-full p-2.5 border rounded-lg dark:bg-gray-700 dark:text-white bg-gray-50 focus:ring-primary-600"></div>
+                <button onclick="updateProfile()" class="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl font-bold transition shadow-md">LƯU THÔNG TIN</button>
+            </div>
+        </div>
+
+        <div id="v-admin" class="hidden-view">
+            <h2 class="text-xl font-bold mb-4 dark:text-white">Quản lý Thành viên</h2>
+            <div class="p-5 bg-white rounded-xl shadow-sm mb-6 dark:bg-gray-800 border flex justify-between items-center">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-gray-400 uppercase">Tỷ lệ lợi nhuận toàn hệ thống (%)</label>
+                    <div class="flex gap-2"><input id="i-markup" type="number" class="border rounded-lg p-2 w-24 dark:bg-gray-700 dark:text-white font-bold"><button onclick="saveMarkup()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition">CẬP NHẬT GIÁ</button></div>
+                </div>
+                <div class="text-right"><p class="text-xs text-gray-400">Giá web = Giá API + % Lợi nhuận</p></div>
+            </div>
+            <div class="overflow-x-auto shadow-md rounded-xl"><table class="w-full text-sm text-left text-gray-500">
+                <thead class="bg-gray-50 dark:bg-gray-700 uppercase text-[10px] font-bold"><tr><th class="px-6 py-3">Tên User</th><th class="px-6 py-3">Số dư hiện tại</th><th class="px-6 py-3 text-green-600">Tổng đã nạp</th><th class="px-6 py-3 text-center">Thao tác</th></tr></thead>
+                <tbody id="admBody"></tbody>
+            </table></div>
+        </div>
+
+        <div id="v-dash" class="hidden-view">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="metrics"></div>
+            <div class="overflow-x-auto shadow-md rounded-xl border"><table class="w-full text-sm text-left text-gray-500">
+                <thead class="bg-gray-50 uppercase text-[10px] font-bold"><tr><th class="px-4 py-3">Người mua</th><th class="px-4 py-3">Tên sản phẩm</th><th class="px-4 py-3">Giá bán</th><th class="px-4 py-3 text-red-500">Giá gốc</th><th class="px-4 py-3 text-purple-600">Lãi ròng</th></tr></thead>
+                <tbody id="dashBody"></tbody>
+            </table></div>
+        </div>
+    </div>
+
+    <div id="topupMod" class="hidden fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-sm dark:bg-gray-800 shadow-2xl border">
+            <div class="flex justify-between items-center mb-4 border-b pb-2"><h3 class="font-bold dark:text-white uppercase text-sm">Nạp tiền cho: <span id="t-target" class="text-primary-600"></span></h3><button onclick="closeTopup()"><i class="fas fa-times text-gray-400"></i></button></div>
+            
+            <p class="text-[10px] font-bold text-gray-400 mb-2 uppercase">Chọn nhanh mức nạp</p>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+                <button onclick="setTopAmount(50000)" class="bg-gray-50 hover:bg-primary-50 dark:bg-gray-700 py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-600 transition">50.000đ</button>
+                <button onclick="setTopAmount(100000)" class="bg-gray-50 hover:bg-primary-50 dark:bg-gray-700 py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-600 transition">100.000đ</button>
+                <button onclick="setTopAmount(200000)" class="bg-gray-50 hover:bg-primary-50 dark:bg-gray-700 py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-600 transition">200.000đ</button>
+                <button onclick="setTopAmount(500000)" class="bg-gray-50 hover:bg-primary-50 dark:bg-gray-700 py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-gray-600 transition">500.000đ</button>
+            </div>
+
+            <label class="text-[10px] font-bold text-gray-400 mb-1 block uppercase">Hoặc nhập số tiền thủ công</label>
+            <input id="t-amount" type="number" placeholder="Nhập số tiền..." class="w-full border p-3 mb-6 rounded-xl dark:bg-gray-700 dark:text-white font-bold">
+            <input type="hidden" id="t-id">
+            
+            <div class="flex gap-2">
+                <button onclick="closeTopup()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold text-gray-500">HỦY</button>
+                <button onclick="doTopup()" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-extrabold shadow-lg shadow-green-100">NẠP NGAY</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="authMod" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-2xl w-full max-w-sm dark:bg-gray-800 shadow-2xl">
+            <h3 id="authTitle" class="text-2xl font-black mb-6 dark:text-white text-center tracking-tight"></h3>
+            <div id="f-login" class="space-y-4">
+                <div class="relative"><i class="fas fa-user absolute left-3 top-3.5 text-gray-300"></i><input id="l-user" placeholder="Tài khoản" class="w-full border pl-10 pr-4 py-3 rounded-xl dark:bg-gray-700 dark:text-white"></div>
+                <div class="relative"><i class="fas fa-lock absolute left-3 top-3.5 text-gray-300"></i><input id="l-pass" type="password" placeholder="Mật khẩu" class="w-full border pl-10 pr-4 py-3 rounded-xl dark:bg-gray-700 dark:text-white"></div>
+                <button onclick="doLogin()" class="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-xl font-black shadow-lg shadow-blue-100 tracking-wide transition">ĐĂNG NHẬP</button>
+                <p class="text-center text-sm text-gray-500">Bạn là người mới? <a href="#" onclick="openAuth('reg')" class="text-primary-600 font-bold hover:underline">Tạo tài khoản</a></p>
+            </div>
+            <div id="f-reg" class="hidden space-y-4">
+                <div class="grid grid-cols-2 gap-2"><input id="r-user" placeholder="Tên đăng nhập" class="border p-3 rounded-xl dark:bg-gray-700 dark:text-white"><input id="r-pass" type="password" placeholder="Mật khẩu" class="border p-3 rounded-xl dark:bg-gray-700 dark:text-white"></div>
+                <input id="r-email" placeholder="Địa chỉ Email" class="w-full border p-3 rounded-xl dark:bg-gray-700 dark:text-white">
+                <input id="r-phone" placeholder="Số điện thoại" class="w-full border p-3 rounded-xl dark:bg-gray-700 dark:text-white">
+                <button onclick="doReg()" class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-black shadow-lg shadow-green-100 transition">KÍCH HOẠT TÀI KHOẢN</button>
+                <p class="text-center text-sm text-gray-500">Đã có tài khoản? <a href="#" onclick="openAuth('login')" class="text-primary-600 font-bold hover:underline">Đăng nhập</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="sysMod" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg overflow-hidden dark:bg-gray-800 shadow-2xl border">
+            <div id="s-head" class="p-4 text-white font-bold flex justify-between items-center"><span id="s-title" class="uppercase text-sm tracking-widest"></span><button onclick="closeSys()"><i class="fas fa-times"></i></button></div>
+            <div id="s-body" class="p-6 dark:text-white text-sm"></div>
+            <div id="s-foot" class="p-4 bg-gray-50 dark:bg-gray-700 flex justify-end gap-2 border-t dark:border-gray-600"></div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script>
+	
+        let allCategories = [], currentUser = null;
+        const headers = () => ({ 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('api_token')}` });
+
+        function toast(type, msg) {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `flex items-center w-full max-w-xs p-4 bg-white rounded-xl shadow-2xl border-l-4 transition-all duration-500 transform -translate-x-full opacity-0 pointer-events-auto dark:bg-gray-800 ${type==='success'?'text-green-600 border-green-500':'text-red-600 border-red-500'}`;
+            t.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':'fa-times-circle'} me-3 text-lg"></i><div class="text-sm font-bold">${msg}</div>`;
+            c.appendChild(t);
+            setTimeout(() => t.classList.remove('-translate-x-full', 'opacity-0'), 10);
+            setTimeout(() => { t.classList.add('-translate-x-full', 'opacity-0'); setTimeout(() => t.remove(), 500); }, 5000);
+        }
+
+        async function initPage() { await checkMe(); loadProds(); }
+
+        async function checkMe() {
+            const token = localStorage.getItem('api_token'); if (!token) return clearUI();
+            try {
+                const r = await fetch('/api/me', { headers: headers() }); const d = await r.json();
+                if (d.status === 'success') {
+                    currentUser = d.data;
+                    document.getElementById('btnLoginBtn').classList.add('hidden');
+                    document.getElementById('userMenu').classList.remove('hidden'); document.getElementById('userMenu').classList.add('flex');
+                    document.getElementById('balanceTxt').innerText = Number(currentUser.balance).toLocaleString() + 'đ';
+                    document.getElementById('topAvatar').src = currentUser.avatar;
+                    if(currentUser.role === 'admin') { 
+                        document.getElementById('adm-1').classList.remove('hidden'); 
+                        document.getElementById('adm-2').classList.remove('hidden'); 
+                    }
+                } else clearUI();
+            } catch (e) { clearUI(); }
+        }
+
+        function clearUI() { localStorage.removeItem('api_token'); currentUser = null; document.getElementById('btnLoginBtn').classList.remove('hidden'); document.getElementById('userMenu').classList.add('hidden'); }
+        function logout() { clearUI(); location.reload(); }
+
+        function showView(v) {
+            ['v-home', 'v-history', 'v-profile', 'v-admin', 'v-dash'].forEach(id => document.getElementById(id).classList.add('hidden-view'));
+            ['m-home', 'm-history', 'm-admin', 'm-dash'].forEach(id => document.getElementById(id)?.classList.remove('bg-primary-50','text-primary-600','dark:bg-gray-700','font-bold'));
+            
+            document.getElementById('v-' + v).classList.remove('hidden-view');
+            if(document.getElementById('m-' + v)) document.getElementById('m-' + v).classList.add('bg-primary-50','text-primary-600','dark:bg-gray-700','font-bold');
+            
+            if(v === 'history') loadHistory();
+            if(v === 'admin') loadUsers();
+            if(v === 'dash') loadDash();
+            if(v === 'profile') loadProfile();
+        }
+
+        async function loadProds() {
+            try {
+                const r = await fetch('/api/forward?type=products'); const d = await r.json();
+                if (d.status === "success" && d.categories) {
+                    allCategories = d.categories.filter(c => c.products?.length > 0);
+                    const l = document.getElementById('catList'); l.innerHTML = '';
+                    allCategories.forEach(c => {
+                        // Hiển thị số lượng sản phẩm trong danh mục ở Sidebar
+                        l.innerHTML += `
+                        <li>
+                            <a href="#" onclick="renderProds(${c.id})" class="flex items-center p-2 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 transition group">
+                                <i class="fas fa-tag w-4 text-gray-300 group-hover:text-primary-500"></i>
+                                <span class="ms-3 flex-1 flex justify-between items-center text-sm font-medium">
+                                    ${c.name}
+                                    <span class="bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-gray-200">
+                                        ${c.products.length}
+                                    </span>
+                                </span>
+                            </a>
+                        </li>`;
+                    });
+                    if(allCategories.length) renderProds(allCategories[0].id);
+                }
+            } catch(e) { toast('error', 'Không thể kết nối API'); }
+        }
+
+        function renderProds(id) {
+            showView('home');
+            const c = allCategories.find(x => x.id == id);
+            if(!c) return;
+            document.getElementById('pageTitle').innerHTML = `<i class="fas fa-folder-open text-primary-600 me-2"></i> ${c.name}`;
+            const g = document.getElementById('prodGrid'); g.innerHTML = '';
+            
+            c.products.forEach(p => {
+                const pr = p.price.toLocaleString() + 'đ';
+                // Kiểm tra và hiển thị tồn kho
+                const stock = p.amount > 0 
+                    ? `<span class="bg-green-100 text-green-700 text-[9px] font-bold px-2 py-0.5 rounded border border-green-200">Kho: ${p.amount}</span>`
+                    : `<span class="bg-red-100 text-red-700 text-[9px] font-bold px-2 py-0.5 rounded border border-red-200">Hết hàng</span>`;
+
+                g.innerHTML += `
+                <div class="bg-white border rounded-2xl dark:bg-gray-800 dark:border-gray-700 overflow-hidden flex flex-col hover:shadow-2xl transition-all group">
+                    <div class="h-32 bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 border-b dark:border-gray-700 relative">
+                        <img class="max-h-full group-hover:scale-110 transition duration-300" src="${c.icon || 'https://via.placeholder.com/50'}">
+                        <div class="absolute top-2 right-2 shadow-sm">${stock}</div>
+                    </div>
+                    <div class="p-4 flex-1 flex flex-col">
+                        <h5 class="text-sm font-bold dark:text-white line-clamp-2 mb-4 leading-snug">${p.name}</h5>
+                        <div class="mt-auto flex justify-between items-center">
+                            <span class="text-red-600 font-black text-lg tracking-tight">${pr}</span>
+                            <button onclick="buy('${p.id}', '${p.name.replace(/'/g,"")}', '${pr}')" 
+                                    ${p.amount <= 0 ? 'disabled' : ''}
+                                    class="${p.amount <= 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700 shadow-lg shadow-blue-50'} text-white px-5 py-2 rounded-xl text-xs font-black transition">
+                                ${p.amount > 0 ? 'MUA' : 'HẾT'}
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        // --- GIAO DỊCH ---
+        function buy(id, name, pr) {
+            if(!currentUser) return openAuth('login');
+            sysMod('confirm', 'Xác nhận đơn hàng', `<div class="text-center"><p class="font-bold text-gray-700 dark:text-gray-200 mb-3">${name}</p><div class="bg-primary-50 dark:bg-gray-900 p-4 rounded-2xl border-2 border-primary-200 border-dashed"><p class="text-[10px] text-primary-400 font-bold uppercase mb-1">Số tiền thanh toán</p><b class="text-red-600 text-2xl tracking-tighter">${pr}</b></div></div>`, `<button onclick="closeSys()" class="bg-gray-100 px-6 py-2 rounded-xl font-bold text-gray-500">HỦY</button><button onclick="execBuy('${id}')" class="bg-primary-600 text-white px-8 py-2 rounded-xl font-black shadow-lg">XÁC NHẬN</button>`);
+        }
+
+        async function execBuy(id) {
+            sysMod('loading', 'Đang xử lý giao dịch...', '<div class="text-center py-8"><i class="fas fa-spinner fa-spin fa-3x text-primary-600"></i><p class="mt-4 text-xs font-bold text-gray-400">Vui lòng đợi trong giây lát</p></div>', '');
+            try {
+                const r = await fetch('/api/buy', { method: 'POST', headers: headers(), body: JSON.stringify({id}) });
+                const d = await r.json();
+                if(d.status === 'success') {
+                    await checkMe();
+                    sysMod('success', 'Giao dịch thành công', `<div class="result-box font-bold border border-green-500/30 mb-4">${d.data.join('\n')}</div><div class="p-3 bg-green-50 rounded-xl text-center"><i class="fas fa-check-circle text-green-500 me-2"></i><span class="text-xs font-bold text-green-700">Dữ liệu đã được lưu vào lịch sử!</span></div>`, `<button onclick="closeSys(); showView('history')" class="w-full bg-green-600 text-white py-3 rounded-xl font-black shadow-lg">XEM LỊCH SỬ</button>`);
+                } else sysMod('error', 'Mua hàng thất bại', `<div class="text-center py-4"><i class="fas fa-exclamation-circle text-red-500 fa-3x mb-3"></i><p class="text-sm font-bold text-red-600">${d.msg}</p></div>`, `<button onclick="closeSys()" class="w-full bg-gray-600 text-white py-3 rounded-xl font-bold">QUAY LẠI</button>`);
+            } catch(e) { sysMod('error', 'Lỗi kết nối', 'Server không phản hồi!'); }
+        }
+
+        async function loadHistory() {
+            const r = await fetch('/api/history', { headers: headers() }); const d = await r.json();
+            const b = document.getElementById('histBody'); b.innerHTML = '';
+            if(!d.data.length) b.innerHTML = '<tr><td colspan="4" class="text-center py-10 text-gray-400">Bạn chưa mua gì cả!</td></tr>';
+            d.data.forEach(o => {
+                b.innerHTML += `<tr class="border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 text-[10px] font-bold text-gray-400">${new Date(o.createdAt).toLocaleString()}</td>
+                    <td class="px-6 py-4 font-bold text-xs dark:text-white leading-tight">${o.productName}</td>
+                    <td class="px-6 py-4 font-black text-red-500 tracking-tighter">${Number(o.price).toLocaleString()}đ</td>
+                    <td class="px-6 py-4"><div class="result-box text-[10px] p-2 leading-relaxed">${o.accounts}</div></td>
+                </tr>`;
+            });
+        }
+
+        // --- ADMIN ---
+        async function loadUsers() {
+            const r = await fetch('/api/admin/users', { headers: headers() }); const d = await r.json();
+            const rs = await fetch('/api/admin/settings', { headers: headers() }); const ds = await rs.json();
+            document.getElementById('i-markup').value = ds.markup;
+            const b = document.getElementById('admBody'); b.innerHTML = '';
+            d.data.forEach(u => {
+                b.innerHTML += `<tr class="border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-bold dark:text-white flex items-center gap-2"><img src="${u.avatar}" class="w-6 h-6 rounded-full border">${u.username} ${u.role==='admin'?'<span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded-full">MASTER</span>':''}</td>
+                    <td class="px-6 py-4 text-primary-600 font-black tracking-tighter">${Number(u.balance).toLocaleString()}đ</td>
+                    <td class="px-6 py-4 text-green-600 font-black tracking-tighter">${Number(u.totalDeposit||0).toLocaleString()}đ</td>
+                    <td class="px-6 py-4 text-center"><button onclick="openTopup('${u._id}','${u.username}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-black transition shadow-sm"><i class="fas fa-plus me-1"></i> NẠP TIỀN</button></td>
+                </tr>`;
+            });
+        }
+
+        function openTopup(id, u) { document.getElementById('t-target').innerText = u; document.getElementById('t-id').value = id; document.getElementById('t-amount').value = ''; document.getElementById('topupMod').classList.remove('hidden'); }
+        function closeTopup() { document.getElementById('topupMod').classList.add('hidden'); }
+        function setTopAmount(val) { document.getElementById('t-amount').value = val; }
+
+        async function doTopup() {
+            const targetUserId = document.getElementById('t-id').value;
+            const amount = document.getElementById('t-amount').value;
+            if(!amount || amount <= 0) return toast('error', 'Số tiền không hợp lệ!');
+            const r = await fetch('/api/admin/topup', { method: 'POST', headers: headers(), body: JSON.stringify({ targetUserId, amount }) });
+            const d = await r.json(); toast(d.status, d.msg); closeTopup(); loadUsers(); await checkMe();
+        }
+
+        async function saveMarkup() {
+            const r = await fetch('/api/admin/settings', { method: 'PUT', headers: headers(), body: JSON.stringify({ markup: document.getElementById('i-markup').value }) });
+            const d = await r.json(); toast(d.status, d.msg); loadProds();
+        }
+
+        async function loadDash() {
+            const r = await fetch('/api/admin/dashboard', { headers: headers() }); const d = await r.json();
+            document.getElementById('metrics').innerHTML = `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700 text-center"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Đơn đã bán</p><b class="text-2xl dark:text-white font-black">${d.metrics.totalOrders}</b></div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700 text-center"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Doanh thu</p><b class="text-2xl text-green-600 font-black tracking-tighter">${Number(d.metrics.rev).toLocaleString()}đ</b></div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700 text-center"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Tiền gốc API</p><b class="text-2xl text-red-600 font-black tracking-tighter">${Number(d.metrics.cost).toLocaleString()}đ</b></div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 dark:bg-gray-800 dark:border-gray-700 text-center"><p class="text-[10px] font-bold text-gray-400 uppercase mb-2">Lợi nhuận</p><b class="text-2xl text-purple-600 font-black tracking-tighter">${Number(d.metrics.profit).toLocaleString()}đ</b></div>
+            `;
+            const b = document.getElementById('dashBody'); b.innerHTML = '';
+            d.orders.forEach(o => {
+                b.innerHTML += `<tr class="border-b dark:bg-gray-800 text-xs hover:bg-gray-50 transition">
+                    <td class="px-4 py-4 font-bold dark:text-white">${o.username}</td><td class="px-4 py-4 font-medium italic text-gray-500">${o.productName}</td>
+                    <td class="px-4 py-4 text-green-600 font-black">${o.price.toLocaleString()}</td><td class="px-4 py-4 text-red-500 font-bold">${o.cost.toLocaleString()}</td>
+                    <td class="px-4 py-4 text-purple-600 font-black bg-purple-50">+${o.profit.toLocaleString()}</td>
+                </tr>`;
+            });
+        }
+
+        // --- AUTH & PROFILE ---
+        function openAuth(v) { 
+            document.getElementById('authMod').classList.remove('hidden'); 
+            document.getElementById('authTitle').innerText = v === 'login' ? 'ĐĂNG NHẬP' : 'ĐĂNG KÝ MỚI';
+            document.getElementById('f-login').classList.toggle('hidden', v !== 'login'); 
+            document.getElementById('f-reg').classList.toggle('hidden', v !== 'reg'); 
+        }
+        function closeAuth() { document.getElementById('authMod').classList.add('hidden'); }
+        async function doLogin() {
+            const r = await fetch('/api/login', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({username: document.getElementById('l-user').value, password: document.getElementById('l-pass').value}) });
+            const d = await r.json(); if(d.status === 'success') { localStorage.setItem('api_token', d.token); closeAuth(); await checkMe(); showToast('success', 'Chào mừng bạn quay trở lại!'); } else toast('error', d.msg);
+        }
+        async function doReg() {
+            const b = { username: document.getElementById('r-user').value, password: document.getElementById('r-pass').value, email: document.getElementById('r-email').value, phone: document.getElementById('r-phone').value };
+            const r = await fetch('/api/register', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(b) });
+            const d = await r.json(); toast(d.status, d.msg); if(d.status === 'success') openAuth('login');
+        }
+        function loadProfile() {
+            document.getElementById('p-avatar').src = currentUser.avatar; document.getElementById('p-user').innerText = currentUser.username;
+            document.getElementById('i-email').value = currentUser.email; document.getElementById('i-phone').value = currentUser.phone;
+            document.getElementById('i-avatar').value = currentUser.avatar;
+            document.getElementById('profBalanceDisplay').innerText = Number(currentUser.balance).toLocaleString() + 'đ';
+        }
+        async function updateProfile() {
+            const b = { email: document.getElementById('i-email').value, phone: document.getElementById('i-phone').value, avatar: document.getElementById('i-avatar').value };
+            const r = await fetch('/api/profile/update', { method: 'PUT', headers: headers(), body: JSON.stringify(b) });
+            const d = await r.json(); toast(d.status, d.msg); if(d.status === 'success') await checkMe();
+        }
+
+        function sysMod(type, title, body, foot) {
+            const m = document.getElementById('sysMod');
+            const h = document.getElementById('s-head');
+            h.className = `p-4 text-white font-bold flex justify-between items-center ${type==='success'?'bg-green-600':type==='error'?'bg-red-600':'bg-primary-600'}`;
+            document.getElementById('s-title').innerText = title;
+            document.getElementById('s-body').innerHTML = body;
+            const f = document.getElementById('s-foot'); f.innerHTML = foot; f.classList.toggle('hidden', !foot);
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeSys() { document.getElementById('sysMod').classList.add('hidden'); }
+    </script>
+</body>
+</html>
