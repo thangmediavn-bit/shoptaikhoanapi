@@ -18,10 +18,10 @@ app.use(express.static('public'));
 const API_KEY = "5e1aa4c8a5233323b385033461164a51QvqRLcbi8IomTaEhZsnD6UtX2FjJNAHp";
 const BASE_URL = "https://mailedus.com/api";
 
-const mongoURI = process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/api_store';
-mongoose.connect(mongoURI);
+// ĐOẠN CODE ĐÚNG:
+mongoose.connect(process.env.MONGO_URL || 'mongodb://127.0.0.1:27017/api_store')
     .then(() => console.log('✅ MongoDB Connected'))
-    .catch(err => console.error('❌ MongoDB Error:', err));
+    .catch(err => console.log('❌ Lỗi kết nối:', err));
 
 // --- SCHEMAS ---
 const userSchema = new mongoose.Schema({
