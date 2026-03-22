@@ -6,17 +6,14 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// ĐÚNG:
-app.listen(PORT, '0.0.0.0', () => { 
-    console.log(`Server is running on port ${PORT}`); 
-});
-// SAI (thường gặp):
-// app.listen(PORT . '0.0.0.0' . () => { ... }) -> Lỗi ngay lập tức
 const JWT_SECRET = 'chuoibimat_sieucap_123456'; 
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+// Chỉ giữ lại một đoạn app.listen duy nhất ở CUỐI FILE server.js
+// Đừng để nó ở đầu file như thế này nhé!
 
 const API_KEY = "5e1aa4c8a5233323b385033461164a51QvqRLcbi8IomTaEhZsnD6UtX2FjJNAHp";
 const BASE_URL = "https://mailedus.com/api";
@@ -376,5 +373,6 @@ app.get('/api/admin/dashboard', auth, adminOnly, async (req, res) => {
 });
 
 // --- DÒNG NÀY PHẢI LUÔN NẰM DƯỚI CÙNG ---
-app.listen(PORT, () => console.log(`🚀 Hệ thống đang chạy tại: http://localhost:${PORT}`));
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => { 
+    console.log(`Server is running on port ${PORT}`); 
+});
